@@ -1,62 +1,52 @@
-# job-resume-matcher
+# Resume Matcher and Job Suggestion Tool Overview
 
-Resume Matcher and Job Suggestion Tool
-Overview
-This python script provides a comprehensive solution for matching resumes with job descriptions, as well as providing suggestions for enhancing resumes to better match with potential job opportunities. It leverages Natural Language Processing (NLP) techniques, TF-IDF and cosine similarity for matching resumes and job descriptions, and provides suggestions based on the most common keywords found in the job descriptions.
+This Python script offers a comprehensive solution for matching resumes with job descriptions and providing suggestions to enhance resumes for better alignment with potential job opportunities. It utilizes Natural Language Processing (NLP) techniques, TF-IDF, and cosine similarity for effective matching and suggestion generation based on common keywords in job descriptions.
 
-How it works
-The script fetches job data via an API request. The job data includes fields such as job descriptions, required skills, and required experience.
+## How it Works
 
-It then processes a set of resumes and matches each resume with the fetched jobs based on the similarity between the resume and the job descriptions.
+- **Data Fetching:** The script fetches job data via an API request, including job descriptions, required skills, and experience.
+- **Resume Processing:** Processes a set of resumes and matches each with the fetched jobs based on similarity.
+- **Suggestions:** Provides tailored suggestions for each resume based on frequent keywords in matched job descriptions.
+- **Visualization:** Displays a bar chart of top suggested keywords across all matched jobs.
 
-After matching, the script provides suggestions for each resume based on the most frequent keywords found in the matched job descriptions.
+## Usage
 
-The script also provides a visualization of the top suggested keywords across all matched jobs.
+### Installation
 
-Usage
-Install the necessary libraries. These include pandas, sklearn, nltk, matplotlib, spacy, requests and others. You can install these using pip:
+Install the necessary libraries with pip:
 
-
-pip install pandas sklearn nltk matplotlib spacy requests
+`pip install pandas sklearn nltk matplotlib spacy requests`
 
 
-Make sure you have the necessary data files in the same directory as the script. This includes the resumes and job descriptions.
+Ensure you have all necessary data files in the script's directory, including resumes and job descriptions.
 
-Run the script:
+### Execution
 
-python res.py
+Run the script with:
+
+`python res.py`
 
 
-The script will output a CSV file containing the matching results and suggestions. It will also display a bar chart showing the top suggested keywords.
-Functions
-The script contains several helper functions. Here's a brief overview:
+The script outputs a CSV file with match results and suggestions, and displays a bar chart of top suggested keywords.
 
-preprocess_text(text): Preprocesses the input text by converting it to lowercase, tokenizing, removing stop words and lemmatizing.
+## Functions Overview
 
-fetch_data(query, page, num_pages): Fetches job data using the RapidAPI job search API.
+- `preprocess_text(text)`: Converts text to lowercase, tokenizes, removes stop words, and lemmatizes.
+- `fetch_data(query, page, num_pages)`: Fetches job data using the RapidAPI job search API.
+- `save_data_to_csv(data, query)`: Saves fetched data to a CSV file.
+- `get_resume_data()`, `get_job_data()`: Load resume and job data from CSV files.
+- `extract_top_keywords(text, n=10, domain_specific_vocab=None)`: Extracts top *n* keywords from text.
+- `generate_suggestions(resume_text, job_descriptions, n=10, domain_specific_vocab=None)`: Generates resume enhancement suggestions.
+- `extract_entities(text)`: Extracts named entities from text.
+- `extract_experience(resume_text)`, `extract_skills(resume_text)`, `extract_education(resume_text)`: Extract relevant resume information.
+- `match_resume_with_jobs(resume_text, job_data)`: Matches resumes with jobs based on similarity.
+- `main()`: Coordinates the entire process.
+- `visualize_top_suggestions(result_df, n=10)`: Visualizes top *n* suggested keywords.
 
-save_data_to_csv(data, query): Saves the fetched data to a CSV file.
+## Limitations
 
-get_resume_data(): Loads resume data from a CSV file.
+Note: This script uses a sample of 7 resumes and jobs for brevity. Adjustments may be required for larger datasets.
 
-get_job_data(): Loads job data from a CSV file.
+## Dependencies
 
-extract_top_keywords(text, n=10, domain_specific_vocab=None): Extracts the top n keywords from the input text.
-
-generate_suggestions(resume_text, job_descriptions, n=10, domain_specific_vocab=None): Generates suggestions based on the most frequent keywords found in the job descriptions.
-
-extract_entities(text): Extracts named entities such as organizations, products, locations, languages, and skills from the input text.
-
-extract_experience(resume_text), extract_skills(resume_text), extract_education(resume_text): Extract relevant information from the resume text.
-
-match_resume_with_jobs(resume_text, job_data): Matches a resume with jobs based on the similarity between the resume and the job descriptions.
-
-main(): The main function that coordinates the entire process.
-
-visualize_top_suggestions(result_df, n=10): Provides a visualization of the top n suggested keywords.
-
-Limitations
-Please note that this script uses a sample of 7 resumes and jobs for the sake of brevity. You may need to adjust the sample size or modify the script to handle larger datasets as per your requirements.
-
-Dependencies
-This script depends on several Python libraries including pandas, sklearn, nltk, matplotlib, spacy, and requests. Make sure to install these libraries before running the script.
+The script relies on several Python libraries: pandas, sklearn, nltk, matplotlib, spacy, and requests. Install these before running the script.
