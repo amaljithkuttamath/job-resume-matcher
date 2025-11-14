@@ -280,6 +280,101 @@ class H1BSponsorshipData:
 
         return filtered
 
+    def get_h1b_jobs(
+        self,
+        min_approval_rate: float = 0.8,
+        certified_only: bool = True,
+        limit: Optional[int] = None
+    ) -> List[Dict]:
+        """
+        Extract H1B LCA records as job postings.
+
+        This converts H1B LCA data into job postings that can be directly
+        matched against resumes. These are REAL H1B-sponsored positions.
+
+        Args:
+            min_approval_rate: Filter employers by approval rate
+            certified_only: Only include CERTIFIED applications
+            limit: Maximum number of jobs to return
+
+        Returns:
+            List of job dictionaries with H1B data
+        """
+        if not self._loaded or self.sponsor_data is None:
+            logger.warning("H1B data not loaded.")
+            return []
+
+        df = self.sponsor_data.copy()
+
+        # Filter by case status
+        if certified_only:
+            df = df[df['CASE_STATUS'] == 'CERTIFIED']
+
+        # Filter by employer approval rate
+        if min_approval_rate > 0:
+            # Get employers meeting approval criteria
+            qualified_employers = [
+                emp for emp, info in self.employer_lookup.items()
+                if info.get('approval_rate', 0) >= min_approval_rate
+            ]
+            df['EMPLOYER_NORMALIZED'] = df['EMPLOYER_NAME'].str.upper().str.strip()
+            df = df[df['EMPLOYER_NORMALIZED'].isin(qualified_employers)]
+
+        # Limit results
+        if limit:
+            df = df.head(limit)
+
+        # Convert to job format
+        jobs = []
+        for idx, row in df.iterrows():
+            employer_norm = row['EMPLOYER_NAME'].upper().strip()
+            employer_info = self.employer_lookup.get(employer_norm, {})
+
+            job = {
+                'job_id': row.get('CASE_NUMBER', f'H1B-{idx}'),
+                'job_title': row.get('JOB_TITLE', 'Not specified'),
+                'job_company': row['EMPLOYER_NAME'],
+                'job_location': row.get('WORKSITE_STATE', 'USA'),
+                'job_salary': row.get('PREVAILING_WAGE', 0),
+                'case_status': row.get('CASE_STATUS', 'UNKNOWN'),
+                # H1B specific fields
+                'h1b_certified': True if certified_only else row.get('CASE_STATUS') == 'CERTIFIED',
+                'h1b_approval_rate': employer_info.get('approval_rate', 0),
+                'h1b_avg_salary': employer_info.get('avg_wage', 0),
+                'h1b_total_applications': employer_info.get('total_applications', 0),
+                # Create synthetic job description from available data
+                'job_description': self._create_job_description(row, employer_info)
+            }
+            jobs.append(job)
+
+        logger.info(f"Extracted {len(jobs)} H1B job postings")
+        return jobs
+
+    def _create_job_description(self, row: pd.Series, employer_info: Dict) -> str:
+        """Create a synthetic job description from H1B LCA data."""
+        job_title = row.get('JOB_TITLE', 'Position')
+        employer = row['EMPLOYER_NAME']
+        salary = row.get('PREVAILING_WAGE', 0)
+        location = row.get('WORKSITE_STATE', 'USA')
+
+        description = f"""
+{job_title} position at {employer}
+
+Location: {location}
+Salary: ${salary:,.0f} per year
+
+This is an H1B-sponsored position. The employer has a proven track record
+of H1B visa sponsorship with an approval rate of {employer_info.get('approval_rate', 0):.1%}.
+
+Average H1B salary at {employer}: ${employer_info.get('avg_wage', 0):,.0f}
+Total H1B applications filed: {employer_info.get('total_applications', 0)}
+
+Note: This is a real H1B Labor Condition Application (LCA) certified by the
+Department of Labor, indicating the employer's commitment to hiring foreign workers.
+        """.strip()
+
+        return description
+
     def get_top_sponsors(self, top_n: int = 100) -> pd.DataFrame:
         """
         Get top H1B sponsors by application volume.
