@@ -11,11 +11,8 @@ Data Sources:
 
 import pandas as pd
 import numpy as np
-import requests
-import json
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
-from datetime import datetime
+from typing import Dict, List, Optional
 import logging
 from fuzzywuzzy import fuzz, process
 
@@ -351,13 +348,41 @@ class H1BSponsorshipData:
         return jobs
 
     def _create_job_description(self, row: pd.Series, employer_info: Dict) -> str:
-        """Create a synthetic job description from H1B LCA data."""
+        """
+        Create job description from H1B LCA data.
+
+        Uses actual JOB_DUTIES if available, otherwise creates synthetic description.
+        """
         job_title = row.get('JOB_TITLE', 'Position')
         employer = row['EMPLOYER_NAME']
         salary = row.get('PREVAILING_WAGE', 0)
         location = row.get('WORKSITE_STATE', 'USA')
 
-        description = f"""
+        # Check if we have actual job duties from DOL data
+        job_duties = row.get('JOB_DUTIES', row.get('DUTIES', None))
+
+        if job_duties and pd.notna(job_duties) and str(job_duties).strip():
+            # Use actual job description from LCA
+            description = f"""
+{job_title} at {employer}
+
+Location: {location}
+Salary: ${salary:,.0f} per year
+
+Job Description:
+{job_duties}
+
+H1B Sponsorship Information:
+- H1B Approval Rate: {employer_info.get('approval_rate', 0):.1%}
+- Average H1B Salary: ${employer_info.get('avg_wage', 0):,.0f}
+- Total H1B Applications: {employer_info.get('total_applications', 0)}
+- Status: DOL-Certified Labor Condition Application
+
+This position is certified for H1B visa sponsorship by the U.S. Department of Labor.
+            """.strip()
+        else:
+            # Generate synthetic description when duties not available
+            description = f"""
 {job_title} position at {employer}
 
 Location: {location}
@@ -366,12 +391,16 @@ Salary: ${salary:,.0f} per year
 This is an H1B-sponsored position. The employer has a proven track record
 of H1B visa sponsorship with an approval rate of {employer_info.get('approval_rate', 0):.1%}.
 
-Average H1B salary at {employer}: ${employer_info.get('avg_wage', 0):,.0f}
-Total H1B applications filed: {employer_info.get('total_applications', 0)}
+H1B Sponsorship Information:
+- Average H1B Salary at {employer}: ${employer_info.get('avg_wage', 0):,.0f}
+- Total H1B Applications Filed: {employer_info.get('total_applications', 0)}
 
 Note: This is a real H1B Labor Condition Application (LCA) certified by the
 Department of Labor, indicating the employer's commitment to hiring foreign workers.
-        """.strip()
+
+To see full job duties, download the complete LCA disclosure data from:
+https://www.dol.gov/agencies/eta/foreign-labor/performance
+            """.strip()
 
         return description
 
@@ -403,31 +432,101 @@ Department of Labor, indicating the employer's commitment to hiring foreign work
         Args:
             filepath: Path to save sample data
         """
-        # Sample data based on known H1B sponsors
-        sample_data = {
-            'EMPLOYER_NAME': [
-                'Amazon.com Services LLC',
-                'Microsoft Corporation',
-                'Google LLC',
-                'Meta Platforms Inc',
-                'Apple Inc',
-                'IBM Corporation',
-                'Intel Corporation',
-                'Oracle America Inc',
-                'Salesforce Inc',
-                'Adobe Inc'
-            ] * 100,  # Repeat for sample size
-            'CASE_STATUS': ['CERTIFIED'] * 900 + ['DENIED'] * 100,
-            'PREVAILING_WAGE': np.random.normal(120000, 30000, 1000),
-            'JOB_TITLE': ['Software Engineer', 'Data Scientist', 'ML Engineer'] * 333 + ['Product Manager'],
-            'WORKSITE_STATE': ['CA', 'WA', 'NY', 'TX', 'MA'] * 200,
-            'CASE_NUMBER': [f'I-200-{i:05d}' for i in range(1000)]
+        # Realistic job duties for different roles
+        job_duties_templates = {
+            'Software Engineer': [
+                "Design, develop, and maintain scalable software applications using Python, Java, and modern frameworks. "
+                "Collaborate with cross-functional teams to define and implement new features. "
+                "Write clean, maintainable code and conduct code reviews. "
+                "Deploy applications to cloud infrastructure (AWS/GCP/Azure). "
+                "Troubleshoot and debug production issues. Participate in agile development processes.",
+
+                "Develop backend services and APIs using microservices architecture. "
+                "Implement automated testing and CI/CD pipelines. "
+                "Optimize application performance and scalability. "
+                "Work with databases (SQL and NoSQL) for data storage and retrieval. "
+                "Collaborate with product managers and designers on feature specifications.",
+            ],
+            'Data Scientist': [
+                "Analyze large-scale datasets to extract insights and identify trends. "
+                "Build predictive models using machine learning algorithms (regression, classification, clustering). "
+                "Create data visualizations and dashboards for stakeholder reporting. "
+                "Collaborate with engineering teams to deploy models to production. "
+                "Conduct A/B testing and statistical analysis. Use Python, R, SQL, and tools like Pandas, Scikit-learn.",
+
+                "Develop ML models for business use cases including recommendation systems and forecasting. "
+                "Work with big data technologies (Spark, Hadoop) for data processing. "
+                "Present findings and recommendations to business leaders. "
+                "Ensure data quality and implement data validation procedures.",
+            ],
+            'ML Engineer': [
+                "Design and implement machine learning systems at scale. "
+                "Build and deploy deep learning models using TensorFlow, PyTorch. "
+                "Develop MLOps pipelines for model training, monitoring, and deployment. "
+                "Optimize model performance and inference latency. "
+                "Work on NLP, computer vision, or recommendation systems. "
+                "Collaborate with data scientists and software engineers.",
+
+                "Research and implement state-of-the-art ML algorithms. "
+                "Build feature engineering pipelines and data preprocessing systems. "
+                "Deploy models using Kubernetes, Docker, and cloud platforms. "
+                "Monitor model performance and implement retraining workflows.",
+            ],
+            'Product Manager': [
+                "Define product vision, strategy, and roadmap for technical products. "
+                "Gather and prioritize product requirements from customers and stakeholders. "
+                "Work with engineering, design, and data teams to deliver features. "
+                "Conduct market research and competitive analysis. "
+                "Track product metrics and KPIs. Create product specifications and user stories.",
+
+                "Lead cross-functional teams in product development lifecycle. "
+                "Make data-driven decisions using analytics and user feedback. "
+                "Communicate product updates to stakeholders and executives.",
+            ]
         }
 
-        df = pd.DataFrame(sample_data)
+        # Sample data based on known H1B sponsors
+        employers = [
+            'Amazon.com Services LLC',
+            'Microsoft Corporation',
+            'Google LLC',
+            'Meta Platforms Inc',
+            'Apple Inc',
+            'IBM Corporation',
+            'Intel Corporation',
+            'Oracle America Inc',
+            'Salesforce Inc',
+            'Adobe Inc'
+        ]
+
+        job_titles = ['Software Engineer', 'Data Scientist', 'ML Engineer', 'Product Manager']
+        locations = ['CA', 'WA', 'NY', 'TX', 'MA']
+
+        # Generate data
+        data_rows = []
+        for i in range(1000):
+            employer = employers[i % len(employers)]
+            job_title = job_titles[i % len(job_titles)]
+            location = locations[i % len(locations)]
+
+            # Get realistic job duties
+            duties_options = job_duties_templates.get(job_title, ["Perform job duties as required."])
+            job_duties = duties_options[i % len(duties_options)]
+
+            data_rows.append({
+                'EMPLOYER_NAME': employer,
+                'CASE_STATUS': 'CERTIFIED' if i < 900 else 'DENIED',
+                'PREVAILING_WAGE': np.random.normal(120000, 30000),
+                'JOB_TITLE': job_title,
+                'WORKSITE_STATE': location,
+                'CASE_NUMBER': f'I-200-{i:05d}',
+                'JOB_DUTIES': job_duties
+            })
+
+        df = pd.DataFrame(data_rows)
         df.to_csv(filepath, index=False)
 
-        logger.info(f"✓ Generated sample H1B data: {filepath}")
+        logger.info(f"✓ Generated sample H1B data with job duties: {filepath}")
         return df
 
 
