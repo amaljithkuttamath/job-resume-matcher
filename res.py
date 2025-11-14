@@ -17,12 +17,15 @@ from nltk.corpus import stopwords
 from nltk.stem import WordNetLemmatizer
 from nltk.tokenize import word_tokenize
 
+# Import configuration
+from config import Config
+
 nltk.download('punkt')
 nltk.download('stopwords')
 nltk.download('wordnet')
 nlp = spacy.load("en_core_web_sm")
 
-SAMPLE = 7
+SAMPLE = Config.SAMPLE_SIZE  # Now configurable via .env
 
 def preprocess_text(text):
     # Lowercase the text
@@ -42,14 +45,18 @@ def preprocess_text(text):
     return ' '.join(tokens)
 
 def fetch_data(query, page, num_pages):
-    url = "https://jsearch.p.rapidapi.com/search"
+    """Fetch job data from JSearch API using credentials from config."""
+    url = Config.JSEARCH_API_URL
 
     querystring = {"query": query, "page": page, "num_pages": num_pages}
 
     headers = {
-        "X-RapidAPI-Key": "1b4f9da3f3mshc19729cb573c6f4p12318bjsnfe4c509c9fa5",
-        "X-RapidAPI-Host": "jsearch.p.rapidapi.com"
+        "X-RapidAPI-Key": Config.RAPIDAPI_KEY,
+        "X-RapidAPI-Host": Config.JSEARCH_API_HOST
     }
+
+    if not Config.RAPIDAPI_KEY:
+        raise ValueError("RAPIDAPI_KEY not configured. Please set it in .env file")
 
     response = requests.request("GET", url, headers=headers, params=querystring)
 

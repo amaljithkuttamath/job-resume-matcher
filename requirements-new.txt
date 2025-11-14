@@ -1,0 +1,77 @@
+# Core Dependencies (from original requirements.txt)
+pandas==2.0.1
+numpy==1.24.3
+scikit-learn==1.2.2
+scipy==1.10.1
+matplotlib==3.7.1
+
+# NLP Libraries
+nltk==3.8.1
+spacy==3.5.2
+en-core-web-sm @ https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.5.0/en_core_web_sm-3.5.0-py3-none-any.whl
+
+# API and Web
+requests==2.30.0
+urllib3==2.0.2
+
+# Date and Time
+python-dateutil==2.8.2
+pytz==2023.3
+
+# NEW: Configuration Management
+python-dotenv==1.0.0
+
+# NEW: Semantic Matching with Sentence Transformers
+sentence-transformers==2.2.2
+torch>=2.0.0  # Required for sentence-transformers
+transformers>=4.30.0
+
+# NEW: Advanced Resume Parsing
+# Note: pyresparser has compatibility issues with newer spaCy versions
+# We'll implement our own enhanced parser instead
+pdfminer.six==20221105  # For PDF parsing
+python-docx==0.8.11  # For DOCX parsing
+pillow==9.5.0  # For image processing
+
+# NEW: Vector Database (Optional but recommended)
+chromadb==0.4.15  # For vector storage
+faiss-cpu==1.7.4  # Alternative: fast similarity search
+
+# Utility Libraries
+tqdm==4.65.0
+joblib==1.2.0
+regex==2023.5.5
+
+# All spaCy and related dependencies
+blis==0.7.9
+catalogue==2.0.8
+confection==0.0.4
+cymem==2.0.7
+langcodes==3.3.0
+murmurhash==1.0.9
+preshed==3.0.8
+pydantic==1.10.7
+spacy-legacy==3.0.12
+spacy-loggers==1.0.4
+srsly==2.4.6
+thinc==8.1.10
+typer==0.7.0
+wasabi==1.1.1
+
+# Other utilities
+click==8.1.3
+colorama==0.4.6
+certifi==2023.5.7
+charset-normalizer==3.1.0
+idna==3.4
+Jinja2==3.1.2
+MarkupSafe==2.1.2
+packaging==23.1
+pyparsing==3.0.9
+six==1.16.0
+typing-extensions==4.5.0
+zipp==3.15.0
+
+# For fuzzy matching (employer name matching with H1B data)
+fuzzywuzzy==0.18.0
+python-Levenshtein==0.21.1
